@@ -13,7 +13,7 @@ First, we can assume that any ES code will output a certain amount of data every
 
 ## Weighting the score by difficulty of prediction
 
-Next, we explore how to assess the level of achievement implied by the model prediction. We start with a ground truth that can be compared with computer-generated predictions. For a given property, $p$,  such as temperature or salinity, we can calculate the differences between a time series of $N$ observed values ($x_{t}$) and the corresponding forecasted values ($f_{t}$), summarising these as a root mean square relative error, $\sqrt{\varepsilon_{p}/N}$, where
+Next, we explore how to assess the level of achievement implied by the model prediction. We start with a ground truth that can be compared with computer-generated predictions. For a given property, $p$,  such as temperature or salinity, we can calculate the differences between a time series of $N$ observed values ($x_{t}$) and the corresponding forecasted values ($f_{t}$), summarising these as a root mean square relative error, $\sqrt{\frac{\varepsilon_{p}}{N}}$, where
 
 ```math
 \varepsilon_{p} = \sum_{t=1}^{N} \left( \frac{x_{t} - f_{t}}{f_{t}} \right)^{2} \;.
@@ -35,11 +35,11 @@ where
 t_{i+1} - t_{i} = h \,\,\forall\,\, i \in \{1..n\} \;.
 ```
 
-This is specific to a particular property and autocorrelation lag ($h$). In the numerator of the expression for $\chi_{p,h}\,$, we subtract the error term from one so that a low error corresponds to a high skill score. Further, the error term is also tied to a single $h$ value, which is now the time interval between each successive forecast ($f_{t}$) and observation ($x_{t}$), i.e. the summation for $\chi_{p,h}$ is over some subset of the original time series of size $N$.
+This is specific to a particular property and autocorrelation lag ($h$). In the numerator of the expression for $\chi_{p,h}$ we subtract the error term from one so that a low error corresponds to a high skill score. Further, the error term is also tied to a single $h$ value, which is now the time interval between each successive forecast ($f_{t}$) and observation ($x_{t}$), i.e. the summation for $\chi_{p,h}$ is over some subset of the original time series of size $N$.
 
 The (discrete) set of relevant lag values will depend on the scope of the simulation, whether it is a climate model or a weather forecast. In general, the autocorrelation will tend to zero for smaller lag values: fluctuations are random once time scales are short enough, e.g. minute-to-minute variations in wind speed. It is necessary therefore to bound $h$ such that undefined skill scores are avoided. (The maximum $h$ value is limited by the simulation time.) Although we propose to discard low lag values when calculating a skill score, the impact of short term variability is known to influence longer term variations as a consequence of Hasselmann’s stochastic theory (Hasselmann 1976). We expect therefore that the skill scores associated with longer lag values will reflect the model’s success in allowing long-term phenomena to be influenced by continuous short-term random excitations. In other words, the fidelity of a model on timescales corresponding to small $h$ values is still being captured by the skill score. 
 
-There are three more points worth mentioning. In some cases, $\sqrt{\varepsilon_{p,h}/n}>1$, which would cause the skill score to become more negative the closer the autocorrelation is to zero. This can be remedied by changing the  $\gamma^2(h)$ denominator in the equation above to $1-\gamma^2(h)$ whenever the error exceeds one. Thus, the skill score now becomes less negative for observations that show lower autocorrelation and are therefore harder to predict.
+There are three more points worth mentioning. In some cases, $\sqrt{\frac{\varepsilon_{p,h}}{n}}>1$, which would cause the skill score to become more negative the closer the autocorrelation is to zero. This can be remedied by changing the  $\gamma^2(h)$ denominator in the equation above to $1-\gamma^2(h)$ whenever the error exceeds one. Thus, the skill score now becomes less negative for observations that show lower autocorrelation and are therefore harder to predict.
 
 Secondly, as with the RSO, we can divide the skill score, $\chi$, by the unit of energy usage to obtain an energy-aware skill-based score. Thirdly, autocorrelations can be applied to spatially varying properties too.
 
