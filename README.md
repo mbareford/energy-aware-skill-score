@@ -26,7 +26,7 @@ Next, we explore how to assess the level of achievement implied by the model pre
 ```
 where
 ```math
-\varepsilon_{p,h} = \sum_{t=1}^{N} \left( \frac{x_{t} - f_{t}}{f_{t}} \right)^2 \;,
+\varepsilon_{p,h} = \sum_{t=1}^{n} \left( \frac{x_{t} - f_{t}}{f_{t}} \right)^2 \;,
 ```
 ```math
 2\leq n \leq N \;,
@@ -35,7 +35,7 @@ where
 t_{i+1} - t_{i} = h \,\,\forall\,\, i \in \{1..n\} \;.
 ```
 
-<br>This is specific to a particular property and autocorrelation lag ($h$). In the numerator of the expression for $\chi_{p,h}$ we subtract the error term from one so that a low error corresponds to a high skill score. Further, the error term is also tied to a single $h$ value, which is now the time interval between each successive forecast ($f_{t}$) and observation ($x_{t}$), i.e. the summation for $\chi_{p,h}$ is over some subset of the original time series of size $N$.
+<br>This is specific to a particular property and autocorrelation lag ($h$). In the numerator of the expression for $\chi_{p,h}$ we subtract the error term from one so that a low error corresponds to a high skill score. Further, the error term is also tied to a single $h$ value, which is now the time interval between each successive forecast ($f_{t}$) and observation ($x_{t}$), i.e. the summation for $\varepsilon_{p,h}$ is over some subset of the original time series of size $N$.
 
 The (discrete) set of relevant lag values will depend on the scope of the simulation, whether it is a climate model or a weather forecast. In general, the autocorrelation will tend to zero for smaller lag values: fluctuations are random once time scales are short enough, e.g. minute-to-minute variations in wind speed. It is necessary therefore to bound $h$ such that undefined skill scores are avoided. (The maximum $h$ value is limited by the simulation time.) Although we propose to discard low lag values when calculating a skill score, the impact of short term variability is known to influence longer term variations as a consequence of Hasselmann’s stochastic theory (Hasselmann 1976). We expect therefore that the skill scores associated with longer lag values will reflect the model’s success in allowing long-term phenomena to be influenced by continuous short-term random excitations. In other words, the fidelity of a model on timescales corresponding to small $h$ values is still being captured by the skill score. 
 
