@@ -13,7 +13,7 @@ First, we can assume that any ES code will output a certain amount of data every
 
 ## Weighting the score by difficulty of prediction
 
-Next, we explore how to assess the level of achievement implied by the model prediction. We start with a ground truth that can be compared with computer-generated predictions. For a given property, $p$,  such as temperature or salinity, we can calculate the differences between a time series of $N$ observed values ($x_{i}$) and the corresponding forecasted values ($f_{i}$).
+Next, we explore how to assess the level of achievement implied by the model prediction. We start with a ground truth that can be compared with computer-generated predictions. For a given property, $p$,  such as temperature or salinity, we can calculate the differences between a time series of $N$ observed values ($x_{p,i}$) and the corresponding forecasted values ($f_{p,i}$).
 
 An obvious first approach is to summarise these differences as a root mean square relative error (RMSE), $\sqrt{\frac{\varepsilon_{p}}{N}}$, where
 
@@ -21,7 +21,7 @@ An obvious first approach is to summarise these differences as a root mean squar
 \varepsilon_{p} = \sum_{i=1}^{N} \left( \frac{x_{p,i} - f_{p,i}}{x_{p,i}} \right)^{2} \;.
 ```
 
-Basing a skill score on such an expression gives rise to two problems however. Firstly, it is possible for $x_{i}$ to take zero values (fairly common for measurements of temperature and precipitation) causing $\varepsilon_{p}$ to be undefined. Secondly, converting RMSE into a skill score by say subtracting it from one can result in a negative score whenever the error is sufficiently large.
+Basing a skill score on such an expression gives rise to two problems however. Firstly, it is possible for $x_{p,i}$ to take zero values (fairly common for measurements of temperature and precipitation) causing $\varepsilon_{p}$ to be undefined. Secondly, converting the RMSE into a skill score by say subtracting it from one can result in a negative score whenever the error is sufficiently large.
 
 A better technique is to calculate the mean absolute scaled error (MASE) as recommended by Hyndman & Koehler (2006). This method is based on the mean absolute point-to-point difference calculated over the full time series of observations.
 
@@ -29,13 +29,13 @@ A better technique is to calculate the mean absolute scaled error (MASE) as reco
 \omega_{p} = \frac{1}{N-1}\sum_{i=2}^{N} | x_{p,i} - x_{p,i-1} | \;.
 ```
 
-The $\omega_{p}$ term provides the scaling for the MASE, which we denote by $\xi_{p}\,$,
+The $\omega_{p}$ term provides the scaling for the MASE, which we denote by $\xi_{p}$,
 
 ```math
 \xi_{p} = \frac{1}{N}\sum_{i=1}^{N} \frac{|x_{p,i} - f_{p,i}|}{\omega_{p}} \;.
 ```
 
-This scaled error ($\xi_{p}$) is less than one for predictions that beat the average one-step naïve forecast computed in-sample. Conversely, $\xi_{p} > 1$ if the prediction is worse than the average one-step naïve forecast computed in-sample. Further, an undefined $\xi_{p}$ can now only occur if $\omega_{p}=0$, meaning all meaurements in the time series are equal, a scenario so unlikely it can be ignored. 
+This scaled error ($\xi_{p}$) is less than one for predictions that beat the average one-step naïve forecast computed in-sample. Conversely, $\xi_{p} > 1$ if the prediction is worse than the average one-step forecast. Further, an undefined $\xi_{p}$ can now only occur if $\omega_{p}=0$, meaning all meaurements in the time series are equal, a scenario so unlikely it can be ignored. 
 
 Knowing that the range of $\xi_{p}$ starts from zero and is unbounded, we need a way to map $\xi_{p}$ to the range $0-1$, allowing us to derive a skill score.
 
@@ -43,7 +43,7 @@ Knowing that the range of $\xi_{p}$ starts from zero and is unbounded, we need a
 \chi_{p} = 1 - \frac{\xi_{p}}{\xi_{p}+1} \;.
 ```
 
-Thus, $\xi_{p}=\infty$ yields a zero score and a $\xi_{p}=0$ gives a score of one, and so we avoid negative skill scores.
+The expression above avoids negative skill scores, since $\xi_{p}=\infty$ yields a zero score and $\xi_{p}=0$ gives a score of one.
 
 However, given the distribution of $x_{p}$, how difficult was it to make the successful prediction in the first place? Mayer & Yang (2024) propose making use of the lag $h$ autocorrelation of the observations, $\gamma(h)$. The idea here is that $x_{p,i}$ (measured at time $i$) will exhibit some degree of correlation with $x_{p,i-h}$ (the same property measured at time $i-h$). The autocorrelation is (minus) one if the observations are fully (anti) correlated, and so, the difficulty of making a successful prediction is lowest when $\gamma = \pm1$. It follows that the difficulty is highest when the autocorrelation is zero. In fact, the difficulty is impossible for a randomly varying time series characterised by $\gamma = 0$. We now modify the expression for $\chi_{p}$ by introducing the autocorrelation,
 
@@ -66,7 +66,7 @@ for
 i_{t+1} - i_{t} = h \,\,\forall\,\, t \in \{1..n\} \;.
 ```
 
-And so, $\chi_{p,h}$ is specific to a particular property and autocorrelation lag ($h$). The $\xi_{p,h}$ and $\omega_{p,h}$ terms are tied to a single $h$ value, which is now the time interval between each successive forecast ($f_{p,i}$) and observation ($x_{p,i}$), i.e. the summations used to calculate $\xi_{p,h}$ and $\omega_{p,h}$ are over some subset of the original time series of size $N$. All values of $h$ compatible with the time series can be used with the formulation above. The unweighted skill score (i.e. the expression in square brackets that partly determines $\chi_{p,h}$) is preserved when $\gamma(h)=0$. At the opposite extreme, $\chi_{p,h}=0$ when $\gamma(h)=\pm1$. A zero skill score can occur if and only if the observed values are perfectly correlated or anti-correlated. Note, the unweighted skill score itself can only become zero if $\xi_{p,h}=\infty$, which could only happen if the difference between a forecast and observation is also infinite, i.e. the simulation making the forecast has obviously failed and so is not fit to be scored.
+And so, $\chi_{p,h}$ is now specific to a particular property and autocorrelation lag ($h$). The $\xi_{p,h}$ and $\omega_{p,h}$ terms are tied to a single $h$ value, which is now the time interval between each successive forecast ($f_{p,i}$) and observation ($x_{p,i}$), i.e. the summations used to calculate $\xi_{p,h}$ and $\omega_{p,h}$ are over some subset of the original time series of size $N$. All values of $h$ compatible with the time series can be used with the formulation above. The unweighted skill score (i.e. the expression in square brackets that partly determines $\chi_{p,h}$) is preserved when $\gamma(h)=0$. At the opposite extreme, $\chi_{p,h}=0$ when $\gamma(h)=\pm1$. A zero skill score can occur if and only if the observed values are perfectly correlated or anti-correlated. Note, the unweighted skill score itself can only become zero if $\xi_{p,h}=\infty$, which could only happen if the difference between a forecast and observation is also infinite, i.e. the simulation making the forecast has obviously failed and so is not fit to be scored.
 
 The (discrete) set of relevant lag values will depend on the scope of the simulation, whether it is a climate model or a weather forecast. The maximum $h$ value will of course be limited by the simulation time. For the smallest lag values, the autocorrelation will approach zero: fluctuations are random once time scales are short enough, e.g. minute-to-minute variations in wind speed. Nevertheless, the impact of short term variability is known to influence longer term variations as a consequence of Hasselmann’s stochastic theory (Hasselmann 1976). We expect therefore that the skill scores associated with longer lag values will reflect the model’s success in allowing long-term phenomena to be influenced by continuous short-term random excitations. In other words, the fidelity of a model on timescales corresponding to small $h$ values is still being captured by the skill scores based on long lag times.
 
