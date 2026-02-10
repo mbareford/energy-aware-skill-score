@@ -35,7 +35,6 @@ rm ./sed.sh
 
 conda update -y -n root --all
 
-export PS1="(pyenv) [\u@\h \W]\$ "
 
 pip install --upgrade pip
 pip install numpy
@@ -54,4 +53,3 @@ python setup.py install
 
 
 conda deactivate
-export PS1="[\u@\h \W]\$ "
