@@ -2,8 +2,6 @@ PRFX=${HOME}/utils/pyenv
 cd ${PRFX}
 
 
-https://repo.anaconda.com/miniconda/Miniconda3-py313_25.11.1-1-Linux-x86_64.sh
-
 PYTHON_LABEL=py313
 MINICONDA_TAG=miniconda
 MINICONDA_LABEL=${MINICONDA_TAG}3
