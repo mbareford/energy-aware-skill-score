@@ -35,7 +35,7 @@ The $\omega_{p}$ term provides the scaling for the MASE, which we denote by $\xi
 \xi_{p} = \frac{1}{N}\sum_{i=1}^{N} \frac{|x_{p,i} - f_{p,i}|}{\omega_{p}} \;.
 ```
 
-This scaled error ($\xi_{p}$) is less than one for predictions that beat the average one-step naïve forecast computed in-sample. Conversely, $\xi_{p} > 1$ if the prediction is worse than the average one-step forecast. Further, an undefined $\xi_{p}$ can now only occur if $\omega_{p}=0$, meaning all meaurements in the time series are equal. Such a situation is easy to detect and its likelihood depends on the number of elements in the time series. An alternative error scaling would need to be considered for the case when $x_{p,i} = x_{p,i-1} \,\forall\, i \,\in \{2..N\}$. 
+This scaled error ($\xi_{p}$) is less than one for predictions that beat the average one-step naïve forecast computed in-sample. Conversely, $\xi_{p} > 1$ if the prediction is worse than the average one-step forecast. Further, an undefined $\xi_{p}$ can now only occur if $\omega_{p}=0$, meaning all meaurements in the time series are equal. Such a situation is easy to detect and its likelihood depends on the number of elements in the time series. An alternative error scaling would need to be considered for the case when $x_{p,i} = x_{p,i-1} \forall i \in \{2..N\}$. 
 
 Knowing that the range of $\xi_{p}$ starts from zero and is unbounded, we need a way to map $\xi_{p}$ to the range $0-1$, allowing us to derive a skill score.
 
