@@ -52,7 +52,7 @@ However, given the distribution of $x_{p,i}$, how difficult was it to make the s
 ```
 where
 ```math
-\xi_{p,h} = \frac{1}{n}\sum_{i=1}^{n} \frac{|x_{p,i} - f_{p,i}|}{\omega_{p}} 
+\xi_{p,h} = \frac{1}{n}\sum_{i=1}^{n} \frac{|x_{p,i} - f_{p,i}|}{\omega_{p,h}} 
 ```
 and
 ```math
