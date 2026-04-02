@@ -34,9 +34,7 @@ path accessible from the JASMIN server.
 
 This script is under development: so far, I've implemented the functions to calculate the skill scores.
 
-TODO: add arguments that identify the climate model and how to access its output on the JASMIN server.
 TODO: add argument that gives the energy consumed during the model run
-TODO: allow temporal selection for the model output data to be driven from the command line 
 
 Michael Bareford
 m.bareford@epcc.ed.ac.uk
@@ -45,6 +43,7 @@ Mar 2026
 
 
 
+import os
 import argparse
 import math
 import numpy as np
@@ -249,28 +248,92 @@ def calc_hurs_gt(era5_values_dict):
         return np.float32(hurs)
     
     else:
-        print('Cannot calculate "hurs" ground truth: mismatch between ERA5 temperature arrays.')
+        print('calc_hurs_gt: Cannot calculate "hurs" ground truth: mismatch between ERA5 temperature arrays.')
         return []
 
 
+# Calculate the 10m wind speed magnitude using the 10m eastward (U) and
+# 10m northward (V) wind speed components extracted from the ERA5 archive.
+#
+# 'sfcWind' is the CMIP variable name for this form of wind speed.
+def calc_sfcwind_gt(era5_values_dict):
+    u10 = era5_values_dict['10u']  # 10 metre eastward (U) wind component
+    v10 = era5_values_dict['10v']  # 10 metre northward (V) wind component
+
+    if len(u10) == len(v10):
+
+        sfcwind = []
+        for i in range(len(u10)):
+            u = u10[i]
+            v = v10[i]
+
+            sfcwind.append(np.sqrt(u**2 + v**2))
+            
+        return np.float32(sfcwind)
+    
+    else:
+        print('calc_sfcwind_gt: Cannot calculate "sfcWind" ground truth: mismatch between ERA5 wind speed arrays.')
+        return []
+    
+
+# The 'list_fn' file contains lines that follow a "<model output file>,<time index selection>" format.
+# It is assumed that the files are listed in ascending date order.
+# The model output files are NetCDF files.
+# The name of each file contains the temporal resolution and CMIP variable.
+def parse_model_output_list(list_fn, temporal_res, var_list):
+
+    model_output_fns = {}
+    model_output_tis = {}
+
+    print('\nParsing model output list: ' + str(list_fn) + '...\n')
+    output_lines = os.popen('cat ' + list_fn).read().split('\n')
+    
+    for out_line in output_lines:
+        out_line_split = out_line.split(',')
+        out_fn = out_line_split[0]
+        out_ti = out_line_split[-1]
+
+        if temporal_res in out_fn:
+            # data in output file has correct temporal resolution
+            for var in var_list:
+                if var in out_fn:
+                    # data in output file concerns variable var
+                    if var in model_output_fns:
+                        model_output_fns[var].append(out_fn)
+                        model_output_tis[var].append(out_ti)
+                    else:
+                        model_output_fns[var] = [out_fn]
+                        model_output_tis[var] = [out_ti]
+        
+    for var in var_list:
+        if var not in model_output_fns:
+            print('parse_model_output_list: CMIP variable ' + str(var) + ' not captured at ' + str(temporal_res) + ' intervals by any of the model output files listed in ' + list_fn + '.')
+
+    return model_output_fns, model_output_tis
+
 
 '''
-An example call of calc-skill-score.py for the current version.
+An example call of calc-skill-score-cm.py for the current version.
 
 The longitudinal and latitudinal ranges describe a region that covers part of continental Europe,
 that runs from the south east corner of France up to north Netherlands, across to the eastern Belarus
 and down to east Romania.
 
-./calc-skill-score.py -vn 'tas' -vc '#1b9e77' -s '2020-06-01' -e '2020-07-01' -t '6h' -o 6 28 -a 46 53 -lv 6 12 24 168 -ll '6 hrs' '12 hrs' '1 day' '1 wk'
-./calc-skill-score.py -vn 'tas' 'psl' 'hurs' -vc '#1b9e77' '#d95f02' '#7570b3' -s '2020-06-01' -e '2020-07-01' -t '6h' -o 6 28 -a 46 53 -lv 6 12 24 168 -ll '6 hrs' '12 hrs' '1 day' '1 wk'
+./calc-skill-score-cm.py -vn 'tas' -vc '#1b9e77' -s '2000-06-01T03:00' -e '2000-06-30T22:00' -t '6h' -o 6 28 -a 46 53 -d 'CMIP6 HadGEM3' -u './model-output-v1.lst' -m 1 -lv 6 12 24 168 -ll '6 hrs' '12 hrs' '1 day' '1 wk'
+./calc-skill-score-cm.py -vn 'tas' -vc '#1b9e77' -s '2000-01-01T03:00' -e '2000-12-30T22:00' -t '6h' -o 6 28 -a 46 53 -d 'CMIP6 HadGEM3' -u './model-output-v2.lst' -m 1 -lv 6 12 24 168 720 -ll '6 hrs' '12 hrs' '1 day' '1 wk' '30 days'
+./calc-skill-score-cm.py -vn 'tas' -vc '#1b9e77' -s '2000-01-01T03:00' -e '2010-12-30T22:00' -t '6h' -o 6 28 -a 46 53 -d 'CMIP6 HadGEM3' -u './model-output-v3.lst' -m 1 -lv 6 12 24 168 720 8766 -ll '6 hrs' '12 hrs' '1 day' '1 wk' '30 days' '1 yr'
 
-./calc-skill-score.py --variable-names 'tas' 'psl' 'hurs' \
+./calc-skill-score-cm.py -vn 'tas' 'psl' 'hurs' -vc '#1b9e77' '#d95f02' '#7570b3' -s '2000-06-01T03:00' -e '2000-06-30T22:00' -t '6h' -o 6 28 -a 46 53 -d 'CMIP6 HadGEM3' -u './model-output.lst' -m 1 -lv 6 12 24 168 -ll '6 hrs' '12 hrs' '1 day' '1 wk'
+
+./calc-skill-score-cm.py --variable-names 'tas' 'psl' 'hurs' \
                       --variable-colours '#1b9e77' '#d95f02' '#7570b3' \
-                      --start-date '2020-06-01' \
-                      --end-date '2020-07-01' \
+                      --start-date '2000-06-01T03:00' \
+                      --end-date '2000-06-30T21:00' \
                       --time-step '6h' \
                       --longitudes 6 28 \
                       --latitudes 46 53 \
+                      --model-name 'CMIP6 HadGEM3' \
+                      --model-output-list './model-output-v1.lst'
                       --map-func-type 1 \
                       --lag-values 6 12 24 168 \
                       --lag-labels '6 hrs' '12 hrs' '1 day' '1 wk' 
@@ -280,8 +343,9 @@ cmip_property_dict = {
         'tas': { 'desc': 'near-surface air temperature',   'units': 'K',   'era5': ['2t'] },
         'psl': { 'desc': 'sea level pressure',             'units': 'Pa',  'era5': ['msl'] },
        'hurs': { 'desc': 'near-surface relative humidity', 'units': '%',   'era5': ['2t', '2d'] },
-    'sfcWind': { 'desc': 'near-surface wind speed',        'units': 'm/s', 'era5': ['10u', '10v'] }
+    'sfcWind': { 'desc': 'near-surface wind speed',        'units': 'm/s', 'era5': ['10u', '10v'], 'cmip': ['uas', 'vas'] }
 }
+
 
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -289,12 +353,13 @@ parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFo
 parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
 parser.add_argument('-vn', '--variable-names', nargs='+', type=str, default='tas', help='CMIP variable name list: format "<v1> <v2> ... <vn>"')
 parser.add_argument('-vc', '--variable-colours', nargs='+', type=str, default='red', help='CMIP variable colour list: format "<c1> <c2> ... <cn>"')
-parser.add_argument('-d', '--model', type=str, default='CMIP-HadGEM3', help='The climate model to be evaluated')
-parser.add_argument('-s', '--start-date', type=str, default='2020-06-01', help='The start date: format is "YYYY-MM-DD"')
-parser.add_argument('-e', '--end-date', type=str, default='2020-06-02', help='The end date: format is "YYYY-MM-DD"')
+parser.add_argument('-s', '--start-date', type=str, default='2020-06-01', help='The start date: format is "YYYY-MM-DDThh:mm:ss"')
+parser.add_argument('-e', '--end-date', type=str, default='2020-06-02', help='The end date: format is "YYYY-MM-DDThh:mm:ss"')
 parser.add_argument('-t', '--time-step', type=str, default='1h', help='Time step')
 parser.add_argument('-o', '--longitudes', nargs='+', type=int, default='0 360', help='The longitudinal range')
 parser.add_argument('-a', '--latitudes', nargs='+', type=int, default='-90 90', help='The latitudinal range')
+parser.add_argument('-d', '--model-name', type=str, default='Unknown Model', help='The name of the climate model to be evaluated')
+parser.add_argument('-u', '--model-output-list', type=str, default='', help='The name of a file that contains a list of model output files and time index selections.' )
 parser.add_argument('-m', '--map-func-type', type=int, default=1, help='The type of mapping function used to ensure that the skill score is in the range 0-1')
 parser.add_argument('-lv', '--lag-values', nargs='+', type=int, default='1', help='The list of autocorrelation lag values in hours')
 parser.add_argument('-ll', '--lag-labels', nargs='+', type=str, default='1 hr', help='The list of autocorrelation lag labels')
@@ -317,6 +382,11 @@ lat_max = args.latitudes[1]
 lag_values = args.lag_values
 lag_labels = args.lag_labels
 
+
+# Retreive the model output filenames and corresponding time indexes 
+model_output_fns, model_output_tis = parse_model_output_list(args.model_output_list, args.time_step, variable_names)
+
+# Retrieve mapping function used to convert skill score to 0-1 range
 map_func = MappingFunctions().get_function(args.map_func_type)
     
 
@@ -325,42 +395,38 @@ tempPath = '~/tmp/'
 cdo = Cdo(tempdir=tempPath)
 cdo.cleanTempDir()
 
-
-### HARDCODED ### paths to CMIP netcdf files
-model_path_prefix = '/badc/cmip6/data/CMIP6/CMIP/MOHC/HadGEM3-GC31-MM/historical/r1i1p1f3/6hrPlev/'
-model_path_suffix = '/gn/latest/'
-model_fn_suffix = '_6hrPlev_HadGEM3-GC31-MM_historical_r1i1p1f3_gn_200001010300-200012302100.nc'
-
-
+# The skill scores dictionary holds a list of skill scores per variable, where each score
+# corresponds to an autocorrelation lag value
 skill_scores = {}
 
-# Locate the ERA5 archive and assign the result to ground truth archive
+# Locate the ERA5 archive and assign the result to the ground truth archive
 gt_arc = Find_era5()
 
 
-# Iterate over the CMIP variables.
+# Iterate over the CMIP variables
 for cmip_var in variable_names:
 
     cmip_prop = cmip_property_dict[cmip_var]
     print('Calculating skill scores for ' + cmip_prop['desc'] + '...')
 
-
-    # Extract from the ERA5 archive the required ground truth values for the specified time frame and spatial region.
+    print('Obtaining ground truth...')
+    # Extract from the ERA5 archive the required ground truth values for the specified time frame and spatial region
     gt_ds = gt_arc[cmip_prop['era5'],
                    args.start_date:args.end_date:args.time_step,
                    None, # ignore pressure levels
                    long_min:long_max,
                    lat_min:lat_max]
     
+    print('Averaging ground truth...')
     gt_values_dict = {}
     for gt_var, gt_values in gt_ds.items():
         print('gt_var='+str(gt_var))
-        # Average the ground truth over the specified spatial region.
+        # Average the ground truth over the specified spatial region
         gt_avg = gt_values.mean(dim=['longitude', 'latitude'])
         gt_values_dict[gt_var] = np.float32(gt_avg.values)
 
-    # Obtain the ground truth corresponding to the CMIP variable.
-    # In some cases, the ground truth may need to be calculated from the extracted ERA5 data.
+    # Obtain the ground truth corresponding to the CMIP variable
+    # In some cases, the ground truth may need to be calculated from the extracted ERA5 data
     match cmip_var:
         case 'tas':
             gt_values = gt_values_dict['t2m']
@@ -368,10 +434,11 @@ for cmip_var in variable_names:
             gt_values = gt_values_dict['msl']
         case 'hurs':
             gt_values = calc_hurs_gt(gt_values_dict)
+        case 'sfcWind':
+            gt_values = calc_sfcwind_gt(gt_values_dict)
         case _:
-            print('CMIP variable ' + str(cmip_var) + ' cannot be derived from available ERA5 ground truth data.')
+            print('Error, CMIP variable ' + str(cmip_var) + ' cannot be derived from available ERA5 ground truth data.')
             gt_values = []
-            exit()
 
     if 0 == len(gt_values):
         continue
@@ -383,22 +450,31 @@ for cmip_var in variable_names:
     print('Autocorrelations\n' + str(auto_corrs) + '\n\n')
 
 
-    ### HARDCODED ### path to HadGEM model output file
-    model_out_path = model_path_prefix + cmip_var + model_path_suffix + cmip_var + model_fn_suffix
+    print('Obtaining model truth...')
+    if cmip_var in model_output_fns:
+        mt_ds = None
+        for i, out_path in enumerate(model_output_fns[cmip_var]):
+            ti_sel = model_output_tis[cmip_var][i]
     
-    ### HARDCODED ### time series index selection - 153/272 covers the range 2020-06-01 to 2020-06-30 inclusive from the CMIP HadGEM file for the year 2000, i.e. '200001010300-200012302100'.
-    tmi_sel = '153/272'
+            lonlat_extent = str(long_min) + ',' + str(long_max) + ',' + str(lat_min) + ',' + str(lat_max)
+            cdo_in_sel = '-selvar,' + cmip_var + ' -seltimestep,' + ti_sel + ' ' + out_path
 
-    lonlat_extent = str(long_min) + ',' + str(long_max) + ',' + str(lat_min) + ',' + str(lat_max)
-    cdo_in_sel = '-selvar,' + cmip_var + ' -seltimestep,' + tmi_sel + ' ' + model_out_path
+            print(lonlat_extent)
+            print(cdo_in_sel)
 
-    mt_ds = cdo.sellonlatbox(lonlat_extent, input=cdo_in_sel, returnXArray=cmip_var)
+            mt_ds_i = cdo.sellonlatbox(lonlat_extent, input=cdo_in_sel, returnXArray=cmip_var)
+            if mt_ds == None:
+                mt_ds = mt_ds_i
+            else:
+                mt_ds = xr.combine_by_coords([mt_ds_i, mt_ds])
+    else:
+        continue
 
+    print('Averaging ground truth...')    
     mt_avg = mt_ds.mean(dim=['lat','lon'])
 
     # assume model truth is in 32-bit float precision
     mt_values = mt_avg.values
-
 
     mase_errors = calc_mase_errors(mt_values, gt_values, time_interval, mase_scalings, lag_values)
     print('MASE Errors\n' + str(mase_errors) + '\n\n')
@@ -407,7 +483,7 @@ for cmip_var in variable_names:
     print('Skill Scores\n' + str(skill_scores[cmip_var]) + '\n\n')
 
 
-# Plot skill scores as a grouped bar chart.
+# Plot skill scores as a grouped bar chart
 bar_width = 0.25
 
 br = np.arange(len(lag_values))
@@ -421,10 +497,13 @@ ax.set_xlabel('Autocorrelation Lag', fontweight='bold')
 ax.set_xticks(br + bar_width)
 ax.set_xticklabels(lag_labels)
 
-temporal_range = args.start_date + ':' + args.end_date + ':' + args.time_step
+temporal_range = args.start_date.split('T')[0] + ':' + args.end_date.split('T')[0] + ':' + args.time_step
 spatial_range = 'long: ' + str(long_min) + '-' + str(long_max) + ', lat: ' + str(lat_min) + '-' + str(lat_max)
-ax.set_title('CMIP6 HadGEM3 Skill Scores\n(' + temporal_range + ', ' + spatial_range + ')')
+ax.set_title(args.model_name + ' Skill Scores\n(' + temporal_range + ', ' + spatial_range + ')')
 
 ax.legend()
 
-fig.savefig('cmip6-hadgem3-skill-scores.jpg', format='jpg', dpi=1000)
+fig_name = args.model_name
+fig_name = fig_name.replace(' ', '-')
+fig_name = fig_name.lower() + '-skill-scores.jpg'
+fig.savefig(fig_name, format='jpg', dpi=1000)
