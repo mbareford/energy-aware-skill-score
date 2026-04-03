@@ -3,9 +3,13 @@
 Assume a set of time-averaged observations for some property distributed over a grid, $\bar{x}_{t,n}$, where $t$ is the time series index and $n$ is the grid cell index. The corresponding forecasted values are denoted by $\bar{f}_{t,n}$. As regards the error part of the skill score, all values are averaged over some time period no shorter than one month. The two sets of monthly averages representing the model  and ground truths can then be compared to derive an error term,
 
 ```math
-\xi_{n} =  \frac{\sum_{t=1}^{T} (\bar{x}_{t,n} - \bar{f}_{t,n})^2} {\sum_{t=1}^{T} (\bar{x}_{t,n} - \frac{1}{N}\sum_{n=1}^{N}\bar{x}_{t,n})^2} \;,
+\xi_{n} =  \frac{\sum_{t=1}^{T} (\bar{x}_{t,n} - \bar{f}_{t,n})^2} {\sum_{t=1}^{T} (\bar{x}_{t,n} - \bar{x}_{t})^2} \;,
 ```
-where the inner sum in the denominator is a spatial average of a temporally-averaged ground truth observation. Just to be clear, the $t$ index could run from 1 to 12, representing each month in a single year, and the $n$ index could run over a 2D grid, one that encompasses a specified longitudinal and latitudinal range.
+where
+```math
+\bar{x}_{t} = \frac{1}{N}\sum_{n=1}^{N}\bar{x}_{t,n}
+```
+ is a spatial average of a temporally-averaged ground truth observation. Just to be clear, the $t$ index could run from 1 to 12, representing each month in a single year, and the $n$ index could run over a 2D grid, one that encompasses a specified longitudinal and latitudinal range.
 
 The expression for $\xi_{n}$ is based on the coefficient of determination; it is the error associated with a grid cell $n$ over some series of time-averaged values. If the averages derived from the model truth are far from the corresponding ground truth, $\xi_{n}$ will be large, unless the ground truth data deviates substantially from the spatial mean. Conversely, $\xi_{n}$ will be small if the model and ground truths match closely.
 
