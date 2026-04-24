@@ -101,40 +101,7 @@ class MappingFunctions:
         return mfunc
 
 
-# Calculate the Mean Absolute Scaled Error (MASE) scalings for a ground truth ('gt')
-# with respect to the supplied autocorrelation lag values ('h').
-#
-# Assume 'gt' is a numpy array containing property values separated by a fixed interval,
-# which can be temporal or spatial.
-#
-# Returns a dictionary of MASE scalings based on 'gt' where the lag value is the key.
-# The 'lag_values' parameter is used to decide which scalings are stored in the returned dictionary.
-def calc_mase_scalings(gt, gt_interval, lag_values):
 
-    scalings = {}
-    gt_len = len(gt)
-
-    for h in lag_values:
-
-        if h % gt_interval != 0:
-            # lag value is not a multiple of the ground truth interval
-            continue
-        
-        if h in range(1,(gt_len*gt_interval)//2):
-            gt_subset = gt[0:gt_len:h//gt_interval]
-
-            n = len(gt_subset)
-
-            d_sum = 0.0
-            for i in range(1,n):
-                d_sum += abs(gt_subset[i]-gt_subset[i-1])
-
-            scalings[h] = d_sum / (n-1)
-
-        else:
-            print('calc_mase_scalings: Lag value ' + str(h) + ' out of range for ground truth (1-'+str(gt_len*gt_interval)+').')
-
-    return scalings
 
 
 # Calculate the autocorrelations for a ground truth ('gt') with respect to the supplied lag values.
@@ -169,44 +136,6 @@ def calc_auto_correlations(gt, gt_interval, lag_values):
     return auto_corrs
 
 
-# Calculate the Mean Absolute Scaled Error (MASE) for a model truth with respect to a
-# ground truth ('gt') and the supplied autocorrelation lag values ('h').
-#
-# Assume 'mt' and 'gt' are numpy arrays containing property values separated by a fixed interval,
-# which can be temporal or spatial.
-#
-# Returns a dictionary of MASE values derived from comparing 'mt' with 'gt'; the lag value is the key.
-# The 'lag_values' parameter is used to decide which error values are stored in the returned dictionary.
-def calc_mase_errors(mt, gt, interval, mase_scalings, lag_values):
-
-    errors = {}
-
-    mt_len = len(mt)
-    gt_len = len(gt)
-
-    if mt_len == gt_len:
-        # assume model truth and ground truth series have same interval
-        for h in lag_values:
-
-            if h in range(1,(mt_len*interval)//2):
-
-                mt_subset = mt[0:mt_len:h//interval]
-                gt_subset = gt[0:gt_len:h//interval]
-
-                n = len(mt_subset)
-
-                e_sum = 0.0
-                for i in range(1,n):
-                    e_sum += abs(gt_subset[i]-mt_subset[i]) / mase_scalings[h]
-
-                errors[h] = e_sum / n
-
-            else:
-                print('calc_mase_errors: Lag value ' + str(h) + ' out of range for model/ground truth (1-'+str(mt_len*interval)+').')
-    else:
-        print('calc_mase_errors: The number of elements in model truth (' + str(mt_len) + ') does not match ground truth (' + str(gt_len) + ').')
-
-    return errors
 
 
 # Calculate the skill scores by combining MASE values and ground truth autocorrelations that
@@ -222,58 +151,10 @@ def calc_skill_scores(mase_errors, auto_corrs, map_func, lag_values):
     return scores
 
 
-# Calculate the near-surface relative humidity ground truth from the
-# 2m temperature and 2m dewpoint temperature extracted from the ERA5 archive
-#
-# 'hurs' is the CMIP variable name for this form of humidity.
-def calc_hurs_gt(era5_values_dict):
-    t2m = era5_values_dict['t2m']  # 2m temperatue
-    d2m = era5_values_dict['d2m']  # 2m dew point temperatue
-
-    if len(t2m) == len(d2m):
-
-        # define Magnus coefficents
-        mc_beta = 17.625
-        mc_lambda = 243.04
-
-        hurs = []
-        for i in range(len(t2m)):
-            t = t2m[i]
-            dpt = d2m[i]
-
-            hurs.append(100.0*(math.exp((mc_beta*dpt)/(mc_lambda+dpt))
-                               /
-                               math.exp((mc_beta*t)/(mc_lambda+t))))
-            
-        return np.float32(hurs)
-    
-    else:
-        print('calc_hurs_gt: Cannot calculate "hurs" ground truth: mismatch between ERA5 temperature arrays.')
-        return []
 
 
-# Calculate the 10m wind speed magnitude using the 10m eastward (U) and
-# 10m northward (V) wind speed components extracted from the ERA5 archive.
-#
-# 'sfcWind' is the CMIP variable name for this form of wind speed.
-def calc_sfcwind_gt(era5_values_dict):
-    u10 = era5_values_dict['10u']  # 10 metre eastward (U) wind component
-    v10 = era5_values_dict['10v']  # 10 metre northward (V) wind component
 
-    if len(u10) == len(v10):
 
-        sfcwind = []
-        for i in range(len(u10)):
-            u = u10[i]
-            v = v10[i]
-
-            sfcwind.append(np.sqrt(u**2 + v**2))
-            
-        return np.float32(sfcwind)
-    
-    else:
-        print('calc_sfcwind_gt: Cannot calculate "sfcWind" ground truth: mismatch between ERA5 wind speed arrays.')
-        return []
     
 
 # The 'list_fn' file contains lines that follow a "<model output file>,<time index selection>" format.
@@ -319,7 +200,7 @@ The longitudinal and latitudinal ranges describe a region that covers part of co
 that runs from the south east corner of France up to north Netherlands, across to the eastern Belarus
 and down to east Romania.
 
-./calc-skill-score-cm.py -vn 'tas' -vc '#1b9e77' -s '2000-06-01T03:00' -e '2000-06-30T22:00' -t '6h' -o 6 28 -a 46 53 -d 'CMIP6 HadGEM3' -u './model-output-v1.lst' -m 1 -lv 6 12 24 168 -ll '6 hrs' '12 hrs' '1 day' '1 wk'
+./calc-skill-score-cm.py -vn 'tas' -vc '#1b9e77' -s '2000-01' -e '2001-01' -t '1h' -o 6 28 -a 46 53 -d 'CMIP6 HadGEM3' -u './model-output-v1.lst' -m 1 -lv 6 12 24 168 -ll '6 hrs' '12 hrs' '1 day' '1 wk'
 ./calc-skill-score-cm.py -vn 'tas' -vc '#1b9e77' -s '2000-01-01T03:00' -e '2000-12-30T22:00' -t '6h' -o 6 28 -a 46 53 -d 'CMIP6 HadGEM3' -u './model-output-v2.lst' -m 1 -lv 6 12 24 168 720 -ll '6 hrs' '12 hrs' '1 day' '1 wk' '30 days'
 ./calc-skill-score-cm.py -vn 'tas' -vc '#1b9e77' -s '2000-01-01T03:00' -e '2010-12-30T22:00' -t '6h' -o 6 28 -a 46 53 -d 'CMIP6 HadGEM3' -u './model-output-v3.lst' -m 1 -lv 6 12 24 168 720 8766 -ll '6 hrs' '12 hrs' '1 day' '1 wk' '30 days' '1 yr'
 
@@ -353,14 +234,14 @@ parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFo
 parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
 parser.add_argument('-vn', '--variable-names', nargs='+', type=str, default='tas', help='CMIP variable name list: format "<v1> <v2> ... <vn>"')
 parser.add_argument('-vc', '--variable-colours', nargs='+', type=str, default='red', help='CMIP variable colour list: format "<c1> <c2> ... <cn>"')
-parser.add_argument('-s', '--start-date', type=str, default='2020-06-01', help='The start date: format is "YYYY-MM-DDThh:mm:ss"')
-parser.add_argument('-e', '--end-date', type=str, default='2020-06-02', help='The end date: format is "YYYY-MM-DDThh:mm:ss"')
+parser.add_argument('-s', '--start-date', type=str, default='2020-01', help='The start date: format is "YYYY-MM"')
+parser.add_argument('-m', '--months', type=int, default='12', help='The number of months from the start date')
 parser.add_argument('-t', '--time-step', type=str, default='1h', help='Time step')
 parser.add_argument('-o', '--longitudes', nargs='+', type=int, default='0 360', help='The longitudinal range')
 parser.add_argument('-a', '--latitudes', nargs='+', type=int, default='-90 90', help='The latitudinal range')
 parser.add_argument('-d', '--model-name', type=str, default='Unknown Model', help='The name of the climate model to be evaluated')
 parser.add_argument('-u', '--model-output-list', type=str, default='', help='The name of a file that contains a list of model output files and time index selections.' )
-parser.add_argument('-m', '--map-func-type', type=int, default=1, help='The type of mapping function used to ensure that the skill score is in the range 0-1')
+parser.add_argument('-p', '--map-func-type', type=int, default=1, help='The type of mapping function used to ensure that the skill score is in the range 0-1')
 parser.add_argument('-lv', '--lag-values', nargs='+', type=int, default='1', help='The list of autocorrelation lag values in hours')
 parser.add_argument('-ll', '--lag-labels', nargs='+', type=str, default='1 hr', help='The list of autocorrelation lag labels')
 
@@ -370,6 +251,21 @@ args = parser.parse_args()
 
 variable_names = args.variable_names
 variable_colours = args.variable_colours
+
+start_date = args.start_date
+start_year = int(start_date.split('-')[0])
+start_month = int(start_date.split('-')[1])
+
+dates = []
+yr = start_year
+mn = start_month
+for i in range(args.months+2):
+    dates.append(str(yr)+'-'+str(mn))
+    mn += 1
+    if mn > 12:
+        yr += 1
+        mn = 1
+
 
 time_interval = int(args.time_step[:-1])
 
@@ -407,35 +303,47 @@ gt_arc = Find_era5()
 for cmip_var in variable_names:
 
     cmip_prop = cmip_property_dict[cmip_var]
+
     print('Calculating skill scores for ' + cmip_prop['desc'] + '...')
 
     print('Obtaining ground truth...')
-    # Extract from the ERA5 archive the required ground truth values for the specified time frame and spatial region
-    gt_ds = gt_arc[cmip_prop['era5'],
-                   args.start_date:args.end_date:args.time_step,
-                   None, # ignore pressure levels
-                   long_min:long_max,
-                   lat_min:lat_max]
-    
-    print('Averaging ground truth...')
+    gt_var = cmip_prop['era5']
+
+    # Extract from the ERA5 archive the ground truth values for the specified and spatial region
+    # Ground truth values are averaged over each month in the specified time frame.
+    print('Time averaging ground truth...')
     gt_values_dict = {}
+    for i in range(args.months+1):    
+        gt_ds = gt_arc[cmip_prop['era5'],
+                       dates[i]:dates[i+1]:'1h',
+                       None, # ignore pressure levels
+                       long_min:long_max,
+                       lat_min:lat_max]
+        
+        gt_avg = gt_ds.mean(dim=['time'])
+
+        if gt_var in gt_values_dict:
+            gt_values_dict[gt_var] = np.append(gt_values_dict[gt_var], np.float32(gt_avg.values))
+        else:
+            gt_values_dict[gt_var] = np.float32(gt_ds.values)
+        
+
+    gt_spatial_averages_dict = {}
     for gt_var, gt_values in gt_ds.items():
         print('gt_var='+str(gt_var))
+        
+        gt_values_dict[gt_var] =  np.float32(gt_values.values)
+
         # Average the ground truth over the specified spatial region
-        gt_avg = gt_values.mean(dim=['longitude', 'latitude'])
-        gt_values_dict[gt_var] = np.float32(gt_avg.values)
+        gt_var_avgs = gt_values.mean(dim=['longitude', 'latitude'])
+        gt_spatial_averages_dict[gt_var] = np.float32(gt_var_avgs.values)
 
     # Obtain the ground truth corresponding to the CMIP variable
     # In some cases, the ground truth may need to be calculated from the extracted ERA5 data
     match cmip_var:
         case 'tas':
             gt_values = gt_values_dict['t2m']
-        case 'psl':
-            gt_values = gt_values_dict['msl']
-        case 'hurs':
-            gt_values = calc_hurs_gt(gt_values_dict)
-        case 'sfcWind':
-            gt_values = calc_sfcwind_gt(gt_values_dict)
+            gt_spatial_averages = gt_spatial_averages_dict[gt_var]
         case _:
             print('Error, CMIP variable ' + str(cmip_var) + ' cannot be derived from available ERA5 ground truth data.')
             gt_values = []
@@ -443,9 +351,7 @@ for cmip_var in variable_names:
     if 0 == len(gt_values):
         continue
             
-    mase_scalings = calc_mase_scalings(gt_values, time_interval, lag_values)
-    print('MASE Scalings\n' + str(mase_scalings) + '\n\n')
-
+    
     auto_corrs = calc_auto_correlations(gt_values, time_interval, lag_values)
     print('Autocorrelations\n' + str(auto_corrs) + '\n\n')
 
@@ -470,7 +376,7 @@ for cmip_var in variable_names:
     else:
         continue
 
-    print('Averaging ground truth...')    
+    print('Averaging model truth...')    
     mt_avg = mt_ds.mean(dim=['lat','lon'])
 
     # assume model truth is in 32-bit float precision

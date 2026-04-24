@@ -1,0 +1,58 @@
+=====================================================================================
+CMIP6
+=====================================================================================
+
+tas: Near-Surface Air Temperature [K]
+
+sfcWind: Near-Surface Wind Speed [m s-1]
+
+
+hus: Specific Humidity [1]
+huss: Near-Surface Specific Humidity [1]
+hussLut: Near-Surface Specific Humidity on Land-Use Tile [1]
+
+hur: Relative Humidity [%]
+hurs: Near-Surface Relative Humidity [%]
+
+psl: Sea level presure [Pa]
+=====================================================================================
+
+
+
+=====================================================================================
+ERA5
+=====================================================================================
+
+2t: 2 metre temperature [K]
+2d: 2 metre dewpoint temperature [K]
+
+q: Specific humidity [kg kg**-1]
+r: Relative humidity [%]
+
+10u: 10 metre U wind component [m s**-1]
+10v: 10 metre V wind component [m s**-1]
+
+msl: Mean sea level pressure [Pa]
+
+=====================================================================================
+
+
+
+=====================================================================================
+CMIP6-ERA5 Comparisons
+=====================================================================================
+
+tas = 2t
+
+sfcWind = sqrt(uas^2 + vas^2) = sqrt(10u^2 + 10v^2)
+
+
+hurs = 100 * (e^((beta*2d)/(lamda+2d))/e^((beta*2t)/(lamda+2t))
+
+Magnus coefficients
+beta = 17.625
+lambda = 243.04
+
+
+psl = msl
+=====================================================================================

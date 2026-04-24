@@ -27,7 +27,7 @@ This scaled error ($\xi_{n}$) is less than one for predictions that beat the ave
 Knowing that $\xi_{n}$ starts from zero and is unbounded, we need a way to map $\xi_{n}$ to the range $0-1$, allowing us to derive a skill score for each grid cell.
 
 ```math
-\chi_{n} = 1 - \frac{\xi_{n}}{\xi_{n}+1} \;.
+\chi_{n} = \frac{1}{\xi_{n}+1} \;.
 ```
 
 The expression above avoids negative skill scores, since $\xi_{n}=\infty$ yields a zero score and $\xi_{n}=0$ gives a score of one.
@@ -39,7 +39,7 @@ The autocorrelation lag ($h$) should be expressed in units of the finest timesca
 We now modify the expression for $\chi_{n}$ by introducing the autocorrelation,
 
 ```math
-\chi_{n,h} = \Bigg[1 - \frac{\xi_{n}}{\xi_{n}+1}\Bigg]\big(1-|\gamma_{n}(h)|\big)
+\chi_{n,h} = \Bigg[\frac{1}{\xi_{n}+1}\Bigg]\big(1-|\gamma_{n}(h)|\big)
 ```
 
 All values of $h$ compatible with the time series can be used with the formulation above. The unweighted skill score (i.e. the expression in square brackets that partly determines $\chi_{n,h}$) is preserved when $\gamma_{n}(h)=0$. At the opposite extreme, $\chi_{n,h}=0$ when $\gamma_{n}(h)=\pm1$. A zero skill score can occur if and only if the observed values are perfectly correlated or anti-correlated. Note, the unweighted skill score itself can only become zero if $\xi_{n}=\infty$, which could only happen if the difference between a forecast and observation is also infinite, i.e. the simulation making the forecast has obviously failed and so is not fit to be scored.
