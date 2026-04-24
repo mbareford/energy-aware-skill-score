@@ -1,48 +1,48 @@
 # An Energy-aware Skill Score for Weather Forecasts
 
-Assume a time series of observations for some property distributed over a grid, $x_{t,n}$, where $t$ is the time index over $1-T$ and $n$ is the grid cell index covering the range $1-N$. The corresponding forecasted values are denoted by $f_{t,n}$.
+Assume a time series of observations for some property distributed over a grid, $x_{i,t}$, where $i$ is the grid cell index covering the range $1-m$ and $t$ is the time index over $1-n$. The corresponding forecasted values are denoted by $f_{i,t}$.
 
-A first approach is to summarise these differences as a root mean square relative error (RMSE), $\sqrt{\frac{\varepsilon_{n}}{T}}$, where
+A first approach is to summarise these differences as a root mean square relative error (RMSE), $\sqrt{\frac{\varepsilon_{i}}{n}}$, where
 
 ```math
-\varepsilon_{n} = \sum_{t=1}^{T} \left( \frac{x_{t,n} - f_{t,n}}{x_{t,n}} \right)^{2} \;.
+\varepsilon_{i} = \sum_{t=1}^{n} \left( \frac{x_{i,t} - f_{i,t}}{x_{i,t}} \right)^{2} \;.
 ```
 
-Basing a skill score on such an expression gives rise to two problems however. Firstly, it is possible for $x_{t,n}$ to take zero values (fairly common for measurements of temperature and precipitation) causing $\varepsilon_{n}$ to be undefined. Secondly, converting the RMSE into a skill score by, say, subtracting it from one, can result in a negative score whenever the error is sufficiently large.
+Basing a skill score on such an expression gives rise to two problems however. Firstly, it is possible for $x_{i,t}$ to take zero values (fairly common for measurements of temperature and precipitation) causing $\varepsilon_{i}$ to be undefined. Secondly, converting the RMSE into a skill score by, say, subtracting it from one, can result in a negative score whenever the error is sufficiently large.
 
 A better technique is to calculate the mean absolute scaled error (MASE) as recommended by Hyndman & Koehler (2006). This method is based on the mean absolute point-to-point difference calculated over the full time series of observations.
 
 ```math
-\omega_{n} = \frac{1}{T-1}\sum_{t=2}^{T} | x_{t,n} - x_{t-1,n} | \;.
+\omega_{i} = \frac{1}{n-1}\sum_{t=2}^{n} | x_{i,t} - x_{i,t-1} | \;.
 ```
 
-The $\omega_{n}$ term provides the scaling for the MASE, which we denote by $\xi_{n}$,
+The $\omega_{i}$ term provides the scaling for the MASE, which we denote by $\xi_{i}$,
 
 ```math
-\xi_{n} = \frac{\frac{1}{T}\sum_{t=1}^{T} | x_{t,n} - f_{t,n} |}{\omega_{n}} \;.
+\xi_{i} = \frac{\frac{1}{n}\sum_{t=1}^{n} | x_{i,t} - f_{i,t} |}{\omega_{i}} \;.
 ```
 
-This scaled error ($\xi_{n}$) is less than one for predictions that beat the average one-step naive forecast computed in-sample. Conversely, $\xi_{n} > 1$ if the prediction is worse than the average one-step forecast. Further, an undefined $\xi_{n}$ can now only occur if $\omega_{n}=0$, meaning all meaurements in the time series are equal. Such a situation is easy to detect and its likelihood depends on the number of elements in the time series. We assume this likelihood is negligible when $T > 100$ and the interval between consecutive measurements is 1 hour or greater. 
+This scaled error ($\xi_{i}$) is less than one for predictions that beat the average one-step naive forecast computed in-sample. Conversely, $\xi_{i} > 1$ if the prediction is worse than the average one-step forecast. Further, an undefined $\xi_{i}$ can now only occur if $\omega_{i}=0$, meaning all meaurements in the time series are equal. Such a situation is easy to detect and its likelihood depends on the number of elements in the time series. We assume this likelihood is negligible when $n > 100$ and the interval between consecutive measurements is 1 hour or greater. 
 
-Knowing that $\xi_{n}$ starts from zero and is unbounded, we need a way to map $\xi_{n}$ to the range $0-1$, allowing us to derive a skill score for each grid cell.
+Knowing that $\xi_{i}$ starts from zero and is unbounded, we need a way to map $\xi_{i}$ to the range $0-1$, allowing us to derive a skill score for each grid cell.
 
 ```math
-\chi_{n} = \frac{1}{\xi_{n}+1} \;.
+\chi_{i} = \frac{1}{\xi_{i}+1} \;.
 ```
 
-The expression above avoids negative skill scores, since $\xi_{n}=\infty$ yields a zero score and $\xi_{n}=0$ gives a score of one.
+The expression above avoids negative skill scores, since $\xi_{i}=\infty$ yields a zero score and $\xi_{i}=0$ gives a score of one.
 
-However, given the distribution of $x_{n}$ over time, how difficult was it to make the successful prediction in the first place? Mayer & Yang (2024) propose making use of the autocorrelation of the observations, $\gamma_{n}(h)$, where $h$ is the lag value. The idea here is that $x_{t,n}$ (measured at time $t$) will exhibit some degree of correlation with $x_{t-h,n}$ (the same property measured at time $t-h$). The autocorrelation is (minus) one if the observations are fully (anti) correlated, and so, the difficulty of making a successful prediction is lowest when $\gamma = \pm1$. It follows that the difficulty is highest when the autocorrelation is zero. In fact, the difficulty is impossible for a randomly varying time series characterised by $\gamma = 0$.
+However, given the distribution of $x_{i}$ over time, how difficult was it to make the successful prediction in the first place? Mayer & Yang (2024) propose making use of the autocorrelation of the observations, $\gamma_{i}(h)$, where $h$ is the lag value. The idea here is that $x_{i,t}$ (measured at time $t$) will exhibit some degree of correlation with $x_{i,t-h}$ (the same property measured at time $t-h$). The autocorrelation is (minus) one if the observations are fully (anti) correlated, and so, the difficulty of making a successful prediction is lowest when $\gamma = \pm1$. It follows that the difficulty is highest when the autocorrelation is zero. In fact, the difficulty is impossible for a randomly varying time series characterised by $\gamma = 0$.
 
 The autocorrelation lag ($h$) should be expressed in units of the finest timescale captured by the ground truth data, e.g. if using the ERA5 dataset (Soci et al. 2024), $h$ will be some multiple of one hour. In this way, the skill score will reflect the true volatility. For any weather forecast, there is a set of relevant lag values, where the maximum $h$ value is determined by the simulation time. For the smallest lag values, the autocorrelation may approach zero: fluctuations can appear random over short time scales, e.g. minute-to-minute strong variations in wind speed. Nevertheless, the impact of short term variability is known to influence longer term variations as a consequence of Hasselmann’s stochastic theory (Hasselmann 1976). We expect therefore that the skill scores associated with longer lag values will reflect the model’s success in allowing long-term phenomena to be influenced by continuous short-term random excitations. In other words, the fidelity of a model on timescales corresponding to small $h$ values is still being captured by the skill scores based on long lag times.
 
-We now modify the expression for $\chi_{n}$ by introducing the autocorrelation,
+We now modify the expression for $\chi_{i}$ by introducing the autocorrelation,
 
 ```math
-\chi_{n,h} = \Bigg[\frac{1}{\xi_{n}+1}\Bigg]\big(1-|\gamma_{n}(h)|\big)
+\chi_{i,h} = \Bigg[\frac{1}{\xi_{i}+1}\Bigg]\big(1-|\gamma_{i}(h)|\big)
 ```
 
-All values of $h$ compatible with the time series can be used with the formulation above. The unweighted skill score (i.e. the expression in square brackets that partly determines $\chi_{n,h}$) is preserved when $\gamma_{n}(h)=0$. At the opposite extreme, $\chi_{n,h}=0$ when $\gamma_{n}(h)=\pm1$. A zero skill score can occur if and only if the observed values are perfectly correlated or anti-correlated. Note, the unweighted skill score itself can only become zero if $\xi_{n}=\infty$, which could only happen if the difference between a forecast and observation is also infinite, i.e. the simulation making the forecast has obviously failed and so is not fit to be scored.
+All values of $h$ compatible with the time series can be used with the formulation above. The unweighted skill score (i.e. the expression in square brackets that partly determines $\chi_{i,h}$) is preserved when $\gamma_{i}(h)=0$. At the opposite extreme, $\chi_{i,h}=0$ when $\gamma_{i}(h)=\pm1$. A zero skill score can occur if and only if the observed values are perfectly correlated or anti-correlated. Note, the unweighted skill score itself can only become zero if $\xi_{i}=\infty$, which could only happen if the difference between a forecast and observation is also infinite, i.e. the simulation making the forecast has obviously failed and so is not fit to be scored.
 
 The autocorrelation and skill score are calculated for each spatial position $i$ defined by the grid. Once this is done the score can be averaged spatially to give $\chi_{h}$.
 

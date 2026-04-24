@@ -1,37 +1,37 @@
 # An Energy-aware Skill Score for Climate Models
 
-Assume a set of time-averaged observations for some property distributed over a grid, $x_{t,n}$, where $t$ is the time series index and $n$ is the grid cell index. The corresponding forecasted values are denoted by $f_{t,n}$. As regards the error part of the skill score, all values are averaged over some time period no shorter than one month. The two sets of monthly averages representing the model  and ground truths can then be compared to derive an error term,
+Assume a set of time-averaged observations for some property distributed over a grid, $x_{i,t}$ , where $i$ is the grid cell index and $t$ is the time series index. The corresponding forecasted values are denoted by $f_{i,t}$ . As regards the error part of the skill score, all values are averaged over some time period no shorter than one month. The two sets of monthly averages representing the model  and ground truths can then be compared to derive an error term,
 
 ```math
-\xi_{n} =  \frac{\sum_{t=1}^{T} (x_{t,n} - f_{t,n})^2} {\sum_{t=1}^{T} (x_{t,n} - \bar{x}_{t})^2} \;,
+\xi_{i} =  \frac{\sum_{t=1}^{n} (x_{i,t} - f_{i,t})^2} {\sum_{t=1}^{n} (x_{i,t} - \bar{x}_{t})^2} \;,
 ```
 where
 ```math
-\bar{x}_{t} = \frac{1}{N}\sum_{n=1}^{N}x_{t,n}
+\bar{x}_{t} = \frac{1}{m}\sum_{i=1}^{m}x_{i,t}
 ```
- is a spatial average of a temporally-averaged ground truth observations. Just to be clear, the $t$ index could run from 1 to 12, representing each monthly average in a single year, and the $n$ index could run over a 2D grid, one that encompasses a specified longitudinal and latitudinal range.
+ is a spatial average of a temporally-averaged ground truth observations. Just to be clear, the $t$ index could run from 1 to 12, representing each monthly average in a single year, and the $i$ index could run over a 2D grid, one that encompasses a specified longitudinal and latitudinal range.
 
-The expression for $\xi_{n}$ is based on the coefficient of determination; it is the error associated with a grid cell $n$ over some series of time-averaged values. If the averages derived from the model truth are far from the corresponding ground truth, $\xi_{n}$ will be large, unless the ground truth data deviates substantially from the spatial mean. Conversely, $\xi_{n}$ will be small if the model and ground truths match closely.
+The expression for $\xi_{i}$ is based on the coefficient of determination; it is the error associated with a grid cell $i$ over some series of time-averaged values. If the averages derived from the model truth are far from the corresponding ground truth, $\xi_{i}$ will be large, unless the ground truth data deviates substantially from the spatial mean. Conversely, $\xi_{i}$ will be small if the model and ground truths match closely.
 
-Knowing that $\xi_{n}$ starts from zero and is unbounded, we need a way to map $\xi_{n}$ to the range $0-1$, allowing us to derive a skill score.
+Knowing that $\xi_{i}$ starts from zero and is unbounded, we need a way to map $\xi_{i}$ to the range $0-1$, allowing us to derive a skill score.
 
 ```math
-\chi_{n} = \frac{1}{\xi_{n}+1} \;.
+\chi_{i} = \frac{1}{\xi_{i}+1} \;.
 ```
 
-The expression above avoids negative skill scores, since $\xi_{n}=\infty$ yields a zero score and $\xi_{n}=0$ gives a score of one.
+The expression above avoids negative skill scores, since $\xi_{i}=\infty$ yields a zero score and $\xi_{i}=0$ gives a score of one.
 
-However, given the distribution of $x_{n}$ over time, how difficult was it to make the successful prediction in the first place? Mayer & Yang (2024) propose making use of the autocorrelation of the observations, $\gamma_{n}(h)$, where $h$ is the lag value. The idea here is that $x_{t,n}$ (measured at time $t$) will exhibit some degree of correlation with $x_{t-h,n}$ (the same property measured at time $t-h$). The autocorrelation is (minus) one if the observations are fully (anti) correlated, and so, the difficulty of making a successful prediction is lowest when $\gamma = \pm1$. It follows that the difficulty is highest when the autocorrelation is zero. In fact, the difficulty is impossible for a randomly varying time series characterised by $\gamma = 0$.
+However, given the distribution of $x_{i}$ over time, how difficult was it to make the successful prediction in the first place? Mayer & Yang (2024) propose making use of the autocorrelation of the observations, $\gamma_{i}(h)$, where $h$ is the lag value. The idea here is that $x_{i,t}$ (measured at time $t$) will exhibit some degree of correlation with $x_{i,t-h}$ (the same property measured at time $t-h$). The autocorrelation is (minus) one if the observations are fully (anti) correlated, and so, the difficulty of making a successful prediction is lowest when $\gamma = \pm1$. It follows that the difficulty is highest when the autocorrelation is zero. In fact, the difficulty is impossible for a randomly varying time series characterised by $\gamma = 0$.
 
 The autocorrelation lag ($h$) should be expressed in units of the finest timescale captured by the ground truth data, e.g. if using the ERA5 dataset (Soci et al. 2024), $h$ will be some multiple of one hour. In this way, the skill score will reflect the true volatility. For any climate model, there is a set of relevant lag values, where the maximum $h$ value is determined by the simulation time. For the smallest lag values, the autocorrelation may approach zero: fluctuations can appear random over short time scales, e.g. minute-to-minute strong variations in wind speed. Nevertheless, the impact of short term variability is known to influence longer term variations as a consequence of Hasselmann’s stochastic theory (Hasselmann 1976). We expect therefore that the skill scores associated with longer lag values will reflect the model’s success in allowing long-term phenomena to be influenced by continuous short-term random excitations. In other words, the fidelity of a model on timescales corresponding to small $h$ values is still being captured by the skill scores based on long lag times.
 
-We now modify the expression for $\chi_{n}$ by introducing the autocorrelation.
+We now modify the expression for $\chi_{i}$ by introducing the autocorrelation.
 
 ```math
-\chi_{n,h} = \Bigg[\frac{1}{\xi_{n}+1}\Bigg]\big(1-|\gamma_{n}(h)|\big)
+\chi_{i,h} = \Bigg[\frac{1}{\xi_{i}+1}\Bigg]\big(1-|\gamma_{i}(h)|\big)
 ```
 
-All values of $h$ compatible with the ground truth time series can be used with the formulation above. The unweighted skill score (i.e. the expression in square brackets that partly determines $\chi_{n,h}$) is preserved when $\gamma_{n}(h)=0$. At the opposite extreme, $\chi_{n,h}=0$ when $\gamma_{n}(h)=\pm1$. A zero skill score can occur if and only if the observed values are perfectly correlated or anti-correlated. Note, the unweighted skill score itself can only become zero if $\xi_{n}=\infty$, which could only happen if the difference between a forecast and observation is also infinite, i.e. the simulation making the forecast has obviously failed and so is not fit to be scored.
+All values of $h$ compatible with the ground truth time series can be used with the formulation above. The unweighted skill score (i.e. the expression in square brackets that partly determines $\chi_{i,h}$) is preserved when $\gamma_{i}(h)=0$. At the opposite extreme, $\chi_{i,h}=0$ when $\gamma_{i}(h)=\pm1$. A zero skill score can occur if and only if the observed values are perfectly correlated or anti-correlated. Note, the unweighted skill score itself can only become zero if $\xi_{i}=\infty$, which could only happen if the difference between a forecast and observation is also infinite, i.e. the simulation making the forecast has obviously failed and so is not fit to be scored.
 
 The autocorrelation and skill score are calculated for each spatial position $i$ defined by the grid. Once this is done the score can be averaged spatially to give $\chi_{h}$.
 
