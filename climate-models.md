@@ -1,6 +1,6 @@
 # An Energy-aware Skill Score for Climate Models
 
-Assume a set of time-averaged observations for some property distributed over a grid, $\bar{x}_{t,n}$, where $t$ is the time series index and $n$ is the grid cell index. The corresponding forecasted values are denoted by $\bar{f}_{t,n}$. As regards the error part of the skill score, all values are averaged over some time period no shorter than one month. The two sets of monthly averages representing the model  and ground truths can then be compared to derive an error term,
+Assume a set of time-averaged observations for some property distributed over a grid, $x_{t,n}$, where $t$ is the time series index and $n$ is the grid cell index. The corresponding forecasted values are denoted by $f_{t,n}$. As regards the error part of the skill score, all values are averaged over some time period no shorter than one month. The two sets of monthly averages representing the model  and ground truths can then be compared to derive an error term,
 
 ```math
 \xi_{n} =  \frac{\sum_{t=1}^{T} (x_{t,n} - f_{t,n})^2} {\sum_{t=1}^{T} (x_{t,n} - \bar{x}_{t})^2} \;,
