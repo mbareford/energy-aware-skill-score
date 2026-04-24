@@ -19,7 +19,7 @@ A better technique is to calculate the mean absolute scaled error (MASE) as reco
 The $\omega_{n}$ term provides the scaling for the MASE, which we denote by $\xi_{n}$,
 
 ```math
-\xi_{n} = \frac{\frac{1}{T}\sum_{t=1}^{T} |x_{t,n} - f_{t,n}|}{\omega_{n}} \;.
+\xi_{n} = \frac{\frac{1}{T}\sum_{t=1}^{T} | x_{t,n} - f_{t,n} |}{\omega_{n}} \;.
 ```
 
 This scaled error ($\xi_{n}$) is less than one for predictions that beat the average one-step naive forecast computed in-sample. Conversely, $\xi_{n} > 1$ if the prediction is worse than the average one-step forecast. Further, an undefined $\xi_{n}$ can now only occur if $\omega_{n}=0$, meaning all meaurements in the time series are equal. Such a situation is easy to detect and its likelihood depends on the number of elements in the time series. We assume this likelihood is negligible when $T > 100$ and the interval between consecutive measurements is 1 hour or greater. 
